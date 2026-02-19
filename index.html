@@ -23,23 +23,16 @@
         color: white;
     }
 
-    .faq-button, .chat-button {
+    .faq-button {
         background-color: #4CAF50;
         border: none;
         color: white;
         padding: 15px 32px;
-        text-align: center;
         text-decoration: none;
-        display: inline-block;
         font-size: 22px;
         margin-top: 20px;
-        cursor: pointer;
         border-radius: 5px;
-    }
-
-    .faq-button:hover,
-    .chat-button:hover {
-        background-color: #45a049;
+        display: inline-block;
     }
 
     #closed-banner {
@@ -62,46 +55,23 @@
 <div class="content">
     <h1>This is a live chat demo for Boehringer-Ingelheim</h1>
     <a href="https://clandac.github.io/knowledgeportal/" class="faq-button">FAQ</a>
-    <br>
-    <button id="chatButton" class="chat-button" style="display:none;">
-        Start Live Chat
-    </button>
 </div>
 
 <div id="closed-banner">
-    Chat is currently closed. Please use the FAQ or return during business hours.
+    Chat is currently closed. Please return during business hours.
 </div>
 
-<!-- GENESYS BOOTSTRAP -->
-<script type="text/javascript" charset="utf-8">
-(function (g, e, n, es, ys) {
-  g['_genesysJs'] = e;
-  g[e] = g[e] || function () {
-    (g[e].q = g[e].q || []).push(arguments)
-  };
-  g[e].t = 1 * new Date();
-  g[e].c = es;
-  ys = document.createElement('script');
-  ys.async = 1;
-  ys.src = n;
-  ys.charset = 'utf-8';
-  document.head.appendChild(ys);
-})(window, 'Genesys', 'https://apps.mypurecloud.de/genesys-bootstrap/genesys.min.js', {
-  environment: 'prod-euc1',
-  deploymentId: 'dffb3d2a-afec-4ba1-93e2-1ee07f9d60c7'
-});
-</script>
-
-<!-- SCHEDULING LOGIC -->
 <script>
 /* ===== BUSINESS HOURS CONFIG ===== */
 const TIMEZONE = "Europe/Madrid";
 const BUSINESS_HOURS = {
-    days: [1,2,3,4,5],   // 1=Mon ... 5=Fri
+    days: [1,2,3,4,5],  // Mon–Fri
     startHour: 9,
-    endHour: 12
+    endHour: 17
 };
 /* ================================== */
+
+let genesysLoaded = false;
 
 function nowInTimezone(tz) {
     const localeString = new Date().toLocaleString("en-US", { timeZone: tz });
@@ -119,33 +89,51 @@ function isOpenNow() {
     return true;
 }
 
+function loadGenesysWidget() {
+    if (genesysLoaded) return;
+
+    (function (g, e, n, es, ys) {
+      g['_genesysJs'] = e;
+      g[e] = g[e] || function () {
+        (g[e].q = g[e].q || []).push(arguments)
+      };
+      g[e].t = 1 * new Date();
+      g[e].c = es;
+      ys = document.createElement('script');
+      ys.async = 1;
+      ys.src = n;
+      ys.charset = 'utf-8';
+      document.head.appendChild(ys);
+    })(window, 'Genesys',
+       'https://apps.mypurecloud.de/genesys-bootstrap/genesys.min.js',
+       {
+         environment: 'prod-euc1',
+         deploymentId: 'dffb3d2a-afec-4ba1-93e2-1ee07f9d60c7'
+       });
+
+    genesysLoaded = true;
+}
+
 function applySchedule() {
     const open = isOpenNow();
-    const chatBtn = document.getElementById("chatButton");
     const banner = document.getElementById("closed-banner");
 
     if (open) {
-        chatBtn.style.display = "inline-block";
         banner.style.display = "none";
+        loadGenesysWidget();
     } else {
-        chatBtn.style.display = "none";
         banner.style.display = "block";
-
-        if (window.Genesys) {
-            window.Genesys("command", "Launcher.hide");
-        }
+        // Do nothing else.
+        // Since we never injected the script, nothing runs.
     }
 }
 
-document.getElementById("chatButton").addEventListener("click", function() {
-    if (window.Genesys) {
-        window.Genesys("command", "Messenger.open");
-    }
-});
-
-/* Run immediately and every minute */
 applySchedule();
-setInterval(applySchedule, 60000);
+
+/* Optional: auto-refresh page when hour changes */
+setInterval(() => {
+    location.reload();
+}, 60 * 60 * 1000);
 
 </script>
 
